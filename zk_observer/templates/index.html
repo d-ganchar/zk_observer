@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ZK observer</title>
+    <script src="static/jquery-3.2.1.min.js"></script>
+    <style>
+        .title {
+            border-style: solid;
+            border-width: 1px;
+            border-color: #d8d8d8;
+            background: #ecfaff;
+            padding: 2px 2px 2px 7px;
+            margin-bottom: 2px;
+        }
+        span {
+            background-color: #f0ad4e;
+            display: inline;
+            padding: .2em 0.4em .1em;
+            font-size: 65%;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: .25em;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .title:hover {
+            cursor: pointer;
+        }
+
+        .row .content {
+            background-color: #f7f7f9;
+            border: 1px solid #e1e1e8;
+            border-top: 0;
+            padding-left: 10px;
+        }
+
+        #errors {
+            background-color: #f2dede;
+            font-size: 14px;
+            margin: 0 0 10px;
+        }
+
+        #errors p {
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+    <script type="application/javascript">
+        function write_error(message) {
+            $('#errors').append('<p>Server Error: ' + message + '</p>');
+        }
+        function processing_nodes(nodes) {
+            for (var i in nodes) {
+                if (nodes[i].hasOwnProperty('error')) {
+                    write_error(nodes[i].error);
+                    continue;
+                }
+
+                var row = prepareRow(nodes[i]);
+                if (nodes[i].parent == '/' || nodes[i].parent == $.urlParam('path')) {
+                    $('#content').append(row);
+                } else {
+                    var children = $('div[data-id="' + nodes[i].parent + '"] > .content > .children');
+                    children.append(row);
+                }
+            }
+        }
+
+        function get_nodes(path, callback) {
+            var xhr = new XMLHttpRequest();
+
+            xhr.open("GET", 'nodes?node=' + path, true);
+            xhr.onload = function (e) {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    callback(JSON.parse(xhr.response));
+                }
+            };
+            xhr.onerror = function (e) {
+                write_error(xhr.responseURL + '. Status: ' + xhr.status)
+            };
+
+            xhr.send(null);
+        }
+
+        function prepareRow(node) {
+            var id = node.path.replace(/\//g, '_');
+            var id = node.path;
+            var result = $('<div/>');
+            var row = $('<div data-id="' + id +'" data-children="' + node.children_count + '" class="row"/>');
+            var content = $('<div class="content hidden"/>');
+
+            content.append('<div class="details">Created: ' + node.created + '<br/>Last modified: ' + node.last_modified + '</div>')
+            content.append('<div class="children"></div>');
+            row.append('<div class="title">' + node.path + ' <span>' + node.children_count + '</span></div>');
+            row.append(content);
+            result.append(row);
+
+            return result.html();
+        }
+
+        $.urlParam = function(name){
+            var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+            if (results) {
+                return results[1] || 0;
+            } else {
+                return null;
+            }
+        }
+
+        $(document).ready(function() {
+            var path = $.urlParam('path');
+            if  (path == null) {
+                path = '/';
+            }
+            get_nodes(path, processing_nodes);
+
+            $('#content').on('click', '.title', function() {
+                $(this).next().toggleClass('hidden');
+                var row = $(this).parent('.row');
+                if (row.data('children') > 0) {
+                    get_nodes(row.data('id'), processing_nodes);
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <center>
+        <b>ZK Observer</b>
+    </center>
+    <span style="background-color: #337ab7;">
+        You can sorting result if open {host}:{port}/?path=/{node_path}
+    </span>
+    <div id="content">
+    </div>
+    <div id="errors"></div>
+</body>
+</html>
