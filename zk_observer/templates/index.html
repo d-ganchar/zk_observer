@@ -52,6 +52,15 @@
             padding: 0;
             margin: 0;
         }
+
+        a {
+            color: #23527c;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
     <script type="application/javascript">
         function write_error(message) {
@@ -91,13 +100,14 @@
         }
 
         function prepareRow(node) {
-            var id = node.path.replace(/\//g, '_');
+//            var id = node.path.replace(/\//g, '_');
             var id = node.path;
             var result = $('<div/>');
             var row = $('<div data-id="' + id +'" data-children="' + node.children_count + '" class="row"/>');
             var content = $('<div class="content hidden"/>');
 
             content.append('<div class="details">Created: ' + node.created + '<br/>Last modified: ' + node.last_modified + '</div>')
+            content.append('<div><a href="#" data-id="' + id + '" class="update-details">Show details</a></div>');
             content.append('<div class="children"></div>');
             row.append('<div class="title">' + node.path + ' <span>' + node.children_count + '</span></div>');
             row.append(content);
@@ -125,9 +135,27 @@
             $('#content').on('click', '.title', function() {
                 $(this).next().toggleClass('hidden');
                 var row = $(this).parent('.row');
-                if (row.data('children') > 0) {
+                if (row.data('children') > 0 && row.find('.content > .children > .row').length == 0) {
                     get_nodes(row.data('id'), processing_nodes);
                 }
+            });
+
+            $('#content').on('click', '.update-details', function() {
+                var link = $(this);
+
+                $.get('node_content?node=' + $(this).data('id'), function (result) {
+                    if (result.hasOwnProperty('error')) {
+                        alert(result.error);
+                    } else {
+                        var details = link.parent().prev();
+                        details.empty();
+                        details.html(
+                            'Created: ' + result.created +
+                            '<br/>Last modified: ' + result.last_modified +
+                            '<br/>Content: ' + result.content
+                        );
+                    }
+                })
             });
         });
     </script>
