@@ -41,5 +41,5 @@ Tiny service to monitoring ZooKeeper nodes
 ### You can run zk_observer in container
 
 ```
-docker run -e "ZK_HOST=zk_host1:port,zk_host2:port" -e "ZK_ACL=path_r:password" -p 8000:8000 zk_observer
+docker run -e "ZK_HOST=zk_host1:port,zk_host2:port" -e "ZK_ACL=path_r:password" -p 8000:8000 dganchar/zk_observer
 ```
