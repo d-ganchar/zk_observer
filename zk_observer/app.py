@@ -31,17 +31,31 @@ def node_content(request):
 
     try:
         data, node = get_zk().get(request.raw_args['node'])
+        acl, _ = get_zk().get_acls(request.raw_args['node'])
+        acl_data = []
+
+        for tmp_acl in acl:
+            acl_data.append({
+                'perms': tmp_acl.perms,
+                'acl_list': tmp_acl.acl_list,
+                'id': tmp_acl.id
+            })
+
         return response.json(
             {
-                'content': data,
+                'content': data.decode(),
                 'created': str(datetime.fromtimestamp(node.created)),
-                'last_modified': str(datetime.fromtimestamp(node.last_modified))
+                'last_modified': str(datetime.fromtimestamp(node.last_modified)),
+                'ephemeral': bool(node.ephemeralOwner),
+                'acl': json.dumps(acl_data)
             }
         )
     except NoNodeError:
         return response.json({'error': 'Node was removed'})
-    except Exception:
-        return response.json({'error': 'Undefined error'})
+    except UnicodeDecodeError as e:
+        return response.json({'error': 'Error decode of node content. %s' % e})
+    except Exception as e:
+        return response.json({'error': 'Undefined error. %s' % e})
 
 
 @app.route('/')
