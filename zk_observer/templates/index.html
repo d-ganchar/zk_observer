@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>ZK observer</title>
+    <link rel="stylesheet" type="text/css" href="static/jquery-ui.css"/>
     <script src="static/jquery-3.2.1.min.js"></script>
+    <script src="static/jquery-ui.js"></script>
     <style>
         .title {
             border-style: solid;
@@ -13,7 +15,7 @@
             padding: 2px 2px 2px 7px;
             margin-bottom: 2px;
         }
-        span {
+        span.orange {
             background-color: #f0ad4e;
             display: inline;
             padding: .2em 0.4em .1em;
@@ -53,13 +55,32 @@
             margin: 0;
         }
 
-        a {
+        .link {
             color: #23527c;
             text-decoration: none;
         }
 
         a:hover {
             text-decoration: underline;
+        }
+
+        .node-details {
+            border: 1px solid #d8d8d8;
+            background-color: #f7f7f9;
+            padding: 5px;
+            margin: 0px;
+        }
+
+        .ui-widget-header {
+            background-color: #f0ad4e;
+        }
+
+        button.ui-corner-all {
+            border-radius: 12px;
+        }
+
+        button.ui-corner-all:hover {
+            background-color: #23527c;
         }
     </style>
     <script type="application/javascript">
@@ -100,16 +121,19 @@
         }
 
         function prepareRow(node) {
-//            var id = node.path.replace(/\//g, '_');
             var id = node.path;
             var result = $('<div/>');
             var row = $('<div data-id="' + id +'" data-children="' + node.children_count + '" class="row"/>');
             var content = $('<div class="content hidden"/>');
 
-            content.append('<div class="details">Created: ' + node.created + '<br/>Last modified: ' + node.last_modified + '</div>')
-            content.append('<div><a href="#" data-id="' + id + '" class="update-details">Show details</a></div>');
+            content.append(
+                '<div class="details">Created: ' + node.created +
+                '<br/>Last modified: ' + node.last_modified + '</div>'
+            );
+
+            content.append('<div><a href="#" data-id="' + id + '" class="link update-details">Show details</a></div>');
             content.append('<div class="children"></div>');
-            row.append('<div class="title">' + node.path + ' <span>' + node.children_count + '</span></div>');
+            row.append('<div class="title">' + node.path + ' <span class="orange">' + node.children_count + '</span></div>');
             row.append(content);
             result.append(row);
 
@@ -147,13 +171,34 @@
                     if (result.hasOwnProperty('error')) {
                         alert(result.error);
                     } else {
-                        var details = link.parent().prev();
-                        details.empty();
-                        details.html(
-                            'Created: ' + result.created +
-                            '<br/>Last modified: ' + result.last_modified +
-                            '<br/>Content: ' + result.content
-                        );
+                        $( function() {
+                            var dialog = $("#dialog");
+                            var content = '';
+                            var acl = '';
+                            if (result.content != '') {
+                                content = '<p class="node-details">' + result.content + '</p>'
+                            }
+
+                            if (result.acl != '') {
+                                acl = '<p class="node-details">' + result.acl + '</p>';
+                            }
+
+                            dialog.empty();
+
+                            dialog.html(
+                                'Created: ' + result.created +
+                                '<br/>Last modified: ' + result.last_modified +
+                                '<br/>Ephemeral: <span class="link"> ' + result.ephemeral + '</span>' +
+                                '<br/>ACL: ' + acl +
+                                '<br/>Content: ' + content
+                            );
+                            dialog.dialog({
+                                width: 900,
+                                title: link.data('id'),
+                                position: { my: 'top', at: 'top+150' },
+                                modal: true
+                            });
+                        } );
                     }
                 })
             });
@@ -164,11 +209,12 @@
     <center>
         <b>ZK Observer</b>
     </center>
-    <span style="background-color: #337ab7;">
+    <span class="orange" style="background-color: #337ab7;">
         You can sorting result if open {host}:{port}/?path=/{node_path}
     </span>
     <div id="content">
     </div>
     <div id="errors"></div>
+    <div id="dialog" title=""></div>
 </body>
 </html>
